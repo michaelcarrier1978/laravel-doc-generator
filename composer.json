@@ -1,0 +1,24 @@
+{
+    "name": "michaelcarrier/laravel-doc-generator",
+    "description": "laravel documnet generator",
+    "autoload": {
+        "psr-4": {
+            "Michaelcarrier\\LaravelDocGenerator\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Michael Carrier",
+            "email": "u6038461@utah.edu"
+        }
+    ],
+    "require": {
+        "symfony/console": "^6.0",
+        "nikic/php-parser": "^4.15",
+        "guzzlehttp/guzzle": "^7.5",
+        "vlucas/phpdotenv": "^5.5"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
+    }
+}
