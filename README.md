@@ -421,7 +421,7 @@ This project is open-source and available under the MIT License.
 
 ## Author
 
-Michael Carrier - [u6038461@utah.edu](mailto:u6038461@utah.edu)
+Michael Carrier - [michael.carrier1978@gmail.com](mailto:michael.carrier1978@gmail.com)
 
 ## Acknowledgments
 
