@@ -9,6 +9,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Michaelcarrier\LaravelDocGenerator\Parsers\ControllerParser;
 use Michaelcarrier\LaravelDocGenerator\Analyzers\ClaudeAnalyzer;
+use Michaelcarrier\LaravelDocGenerator\Writers\DocumentWriter;
+use Symfony\Component\Console\Input\InputOption;
 
 class GenerateControllerDocs extends Command
 {
@@ -17,8 +19,10 @@ class GenerateControllerDocs extends Command
     protected function configure()
     {
         $this
-            ->setDescription('Generate documentation for a Laravel controller')
-            ->addArgument('file', InputArgument::REQUIRED, 'Path to controller file');
+        ->setDescription('Generate documentation for a Laravel controller')
+        ->addArgument('file', InputArgument::REQUIRED, 'Path to controller file')
+        ->addArgument('output', InputArgument::OPTIONAL, 'Output file path (defaults to input file)')
+        ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Preview changes without writing to file');
     }
     
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -50,19 +54,32 @@ class GenerateControllerDocs extends Command
         $io->section('Generating documentation...');
         $io->progressStart(count($controllerData['methods']));
         
+
+        $methodDocs = [];
         foreach ($controllerData['methods'] as $method) {
             $docs = $analyzer->analyzeMethod($controllerData['className'], $method);
-            
+            $methodDocs[$method['name']] = $docs['phpdoc'];
             $io->progressAdvance();
-            
-            // For now, just output to console
-            $io->newLine(2);
-            $io->writeln("<info>Method: {$method['name']}</info>");
-            $io->writeln($docs['phpdoc']);
         }
-        
+
         $io->progressFinish();
-        $io->success('Documentation generated!');
+
+        // Write documentation to file
+        $writer = new DocumentWriter();
+        $outputPath = $input->getArgument('output');
+
+        if ($input->getOption('dry-run')) {
+            $io->section('Dry run - preview of changes:');
+            foreach ($methodDocs as $methodName => $docBlock) {
+                $io->writeln("<info>Method: {$methodName}</info>");
+                $io->writeln($docBlock);
+                $io->newLine();
+            }
+            $io->note('No files were modified (dry-run mode)');
+        } else {
+            $writer->writeDocumentation($filePath, $methodDocs, $outputPath);
+            $io->success('Documentation written to ' . ($outputPath ?? $filePath));
+        }
         
         return Command::SUCCESS;
     }

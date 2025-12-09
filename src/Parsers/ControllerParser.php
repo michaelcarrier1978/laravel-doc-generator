@@ -5,27 +5,52 @@ namespace Michaelcarrier\LaravelDocGenerator\Parsers;
 use PhpParser\Node;
 use PhpParser\NodeFinder;
 use PhpParser\ParserFactory;
+use Michaelcarrier\LaravelDocGenerator\Parsers\QueryParser;
 
 class ControllerParser
 {
     private $parser;
     private $nodeFinder;
+    private $queryParser;
+
     
     public function __construct()
     {
         $this->parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
         $this->nodeFinder = new NodeFinder();
+        $this->queryParser = new QueryParser();
     }
     
     public function parse(string $filePath): array
     {
+        if (!file_exists($filePath)) {
+            throw new \InvalidArgumentException("File not found: {$filePath}");
+        }
+
+        if (!is_readable($filePath)) {
+            throw new \RuntimeException("File is not readable: {$filePath}");
+        }
+
         $code = file_get_contents($filePath);
-        $ast = $this->parser->parse($code);
-        
+
+        if ($code === false) {
+            throw new \RuntimeException("Failed to read file: {$filePath}");
+        }
+
+        try {
+            $ast = $this->parser->parse($code);
+        } catch (\Exception $e) {
+            throw new \RuntimeException("Failed to parse PHP file: " . $e->getMessage(), 0, $e);
+        }
+
+        if (!$ast) {
+            throw new \RuntimeException("Failed to generate AST from file");
+        }
+
         $class = $this->nodeFinder->findFirstInstanceOf($ast, Node\Stmt\Class_::class);
-        
+
         if (!$class) {
-            throw new \Exception("No class found in file");
+            throw new \RuntimeException("No class found in file: {$filePath}");
         }
         
         $className = $class->name->toString();
@@ -38,10 +63,11 @@ class ControllerParser
                     'params' => $this->extractParams($method),
                     'returnType' => $this->extractReturnType($method),
                     'code' => $this->extractMethodCode($method, $code),
+                    'queries' => $this->queryParser->extractQueries($method), // Add this line
                 ];
             }
         }
-        
+            
         return [
             'className' => $className,
             'namespace' => $this->extractNamespace($ast),

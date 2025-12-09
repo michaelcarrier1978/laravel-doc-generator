@@ -3,14 +3,19 @@
 namespace Michaelcarrier\LaravelDocGenerator\Analyzers;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 
 class ClaudeAnalyzer
 {
     private Client $client;
     private string $apiKey;
-    
+
     public function __construct(string $apiKey)
     {
+        if (empty($apiKey)) {
+            throw new \InvalidArgumentException('Anthropic API key cannot be empty');
+        }
+
         $this->apiKey = trim($apiKey);
 
         $this->client = new Client([
@@ -20,29 +25,50 @@ class ClaudeAnalyzer
                 'anthropic-version' => '2023-06-01',
                 'content-type' => 'application/json',
             ],
+            'timeout' => 30,
         ]);
     }
-    
+
     public function analyzeMethod(string $className, array $methodData): array
     {
-        $prompt = $this->buildMethodPrompt($className, $methodData);
-        
-        $response = $this->client->post('/v1/messages', [
-            'json' => [
-                'model' => 'claude-sonnet-4-5',
-                'max_tokens' => 1000,
-                'messages' => [
-                    [
-                        'role' => 'user',
-                        'content' => $prompt,
+        try {
+            $prompt = $this->buildMethodPrompt($className, $methodData);
+
+            $response = $this->client->post('/v1/messages', [
+                'json' => [
+                    'model' => 'claude-3-haiku-20240307',
+                    'max_tokens' => 1000,
+                    'messages' => [
+                        [
+                            'role' => 'user',
+                            'content' => $prompt,
+                        ],
                     ],
                 ],
-            ],
-        ]);
-        
-        $result = json_decode($response->getBody()->getContents(), true);
-        
-        return $this->parseResponse($result['content'][0]['text']);
+            ]);
+
+            $result = json_decode($response->getBody()->getContents(), true);
+
+            if (!isset($result['content'][0]['text'])) {
+                throw new \RuntimeException('Unexpected response format from Claude API');
+            }
+
+            return $this->parseResponse($result['content'][0]['text']);
+        } catch (GuzzleException $e) {
+            $message = $e->getMessage();
+
+            if (strpos($message, '401') !== false) {
+                throw new \RuntimeException('Invalid Anthropic API key. Please check your ANTHROPIC_API_KEY in .env file', 0, $e);
+            } elseif (strpos($message, '429') !== false) {
+                throw new \RuntimeException('Rate limit exceeded. Please wait and try again', 0, $e);
+            } elseif (strpos($message, '500') !== false) {
+                throw new \RuntimeException('Anthropic API is experiencing issues. Please try again later', 0, $e);
+            }
+
+            throw new \RuntimeException('Failed to analyze method with Claude: ' . $message, 0, $e);
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Error analyzing method: ' . $e->getMessage(), 0, $e);
+        }
     }
     
     private function buildMethodPrompt(string $className, array $methodData): string
