@@ -1,6 +1,6 @@
 <?php
 
-namespace Michaelcarrier\LaravelDocGenerator\Parsers;
+namespace LaravelDocs\Generator\Parsers;
 
 use PhpParser\Node;
 use PhpParser\NodeFinder;

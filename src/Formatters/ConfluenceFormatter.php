@@ -1,6 +1,6 @@
 <?php
 
-namespace Michaelcarrier\LaravelDocGenerator\Formatters;
+namespace LaravelDocs\Generator\Formatters;
 
 class ConfluenceFormatter
 {

@@ -4,9 +4,9 @@
 require __DIR__ . '/../vendor/autoload.php';
 
 use Symfony\Component\Console\Application;
-use Michaelcarrier\LaravelDocGenerator\Commands\GenerateControllerDocs;
-use Michaelcarrier\LaravelDocGenerator\Commands\TestConfluence;
-use Michaelcarrier\LaravelDocGenerator\Commands\PublishToConfluence;
+use LaravelDocs\Generator\Commands\GenerateControllerDocs;
+use LaravelDocs\Generator\Commands\TestConfluence;
+use LaravelDocs\Generator\Commands\PublishToConfluence;
 
 
 // Load environment variables

@@ -1,6 +1,6 @@
 <?php
 
-namespace Michaelcarrier\LaravelDocGenerator\Commands;
+namespace LaravelDocs\Generator\Commands;
 
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -8,14 +8,32 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Michaelcarrier\LaravelDocGenerator\Parsers\ControllerParser;
-use Michaelcarrier\LaravelDocGenerator\Analyzers\ClaudeAnalyzer;
-use Michaelcarrier\LaravelDocGenerator\Clients\ConfluenceClient;
-use Michaelcarrier\LaravelDocGenerator\Formatters\ConfluenceFormatter;
+use LaravelDocs\Generator\Parsers\ControllerParser;
+use LaravelDocs\Generator\Analyzers\ClaudeAnalyzer;
+use LaravelDocs\Generator\Clients\ConfluenceClient;
+use LaravelDocs\Generator\Formatters\ConfluenceFormatter;
 
 class PublishToConfluence extends Command
 {
     protected static $defaultName = 'publish:confluence';
+    protected $signature = 'docs:publish {file : Path to controller file} {--space= : Confluence space key} {--parent-id= : Parent page ID}';
+
+    /**
+     * Get configuration value (supports both Laravel and standalone)
+     */
+    protected function getConfigValue(string $key, string $envKey): mixed
+    {
+        // Try Laravel config first
+        if (function_exists('config')) {
+            $value = config('laravel-doc-generator.' . $key);
+            if ($value !== null) {
+                return $value;
+            }
+        }
+
+        // Fall back to environment variables
+        return $_ENV[$envKey] ?? getenv($envKey) ?? '';
+    }
     
     protected function configure()
     {
@@ -37,10 +55,10 @@ class PublishToConfluence extends Command
         }
         
         // Get Confluence credentials
-        $baseUrl = $_ENV['CONFLUENCE_BASE_URL'] ?? getenv('CONFLUENCE_BASE_URL') ?? '';
-        $email = $_ENV['CONFLUENCE_EMAIL'] ?? getenv('CONFLUENCE_EMAIL') ?? '';
-        $apiToken = $_ENV['CONFLUENCE_API_TOKEN'] ?? getenv('CONFLUENCE_API_TOKEN') ?? '';
-        $spaceKey = $input->getOption('space') ?? $_ENV['CONFLUENCE_SPACE_KEY'] ?? getenv('CONFLUENCE_SPACE_KEY') ?? '';
+        $baseUrl = $this->getConfigValue('confluence.base_url', 'CONFLUENCE_BASE_URL');
+        $email = $this->getConfigValue('confluence.email', 'CONFLUENCE_EMAIL');
+        $apiToken = $this->getConfigValue('confluence.api_token', 'CONFLUENCE_API_TOKEN');
+        $spaceKey = $input->getOption('space') ?? $this->getConfigValue('confluence.space_key', 'CONFLUENCE_SPACE_KEY');
         
         if (!$baseUrl || !$email || !$apiToken || !$spaceKey) {
             $io->error('Missing Confluence credentials or space key');
@@ -56,14 +74,11 @@ class PublishToConfluence extends Command
         $io->success("Found {$controllerData['className']} with " . count($controllerData['methods']) . " methods");
         
         // Get API key for Claude
-        $apiKey = $_ENV['ANTHROPIC_API_KEY'] ?? getenv('ANTHROPIC_API_KEY') ?? '';
+        $apiKey = $this->getConfigValue('anthropic.api_key', 'ANTHROPIC_API_KEY');
         if (!$apiKey) {
-            $io->error('ANTHROPIC_API_KEY environment variable not set');
+            $io->error('ANTHROPIC_API_KEY environment variable or config not set');
             return Command::FAILURE;
         }
-
-        // Debug: show first and last few characters
-        $io->note('API Key loaded: ' . substr($apiKey, 0, 20) . '...' . substr($apiKey, -15));
         
         // Generate documentation
         $io->section('Generating documentation...');

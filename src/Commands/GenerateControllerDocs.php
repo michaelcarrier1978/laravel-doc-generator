@@ -1,21 +1,39 @@
 <?php
 
-namespace Michaelcarrier\LaravelDocGenerator\Commands;
+namespace LaravelDocs\Generator\Commands;
 
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Michaelcarrier\LaravelDocGenerator\Parsers\ControllerParser;
-use Michaelcarrier\LaravelDocGenerator\Analyzers\ClaudeAnalyzer;
-use Michaelcarrier\LaravelDocGenerator\Writers\DocumentWriter;
+use LaravelDocs\Generator\Parsers\ControllerParser;
+use LaravelDocs\Generator\Analyzers\ClaudeAnalyzer;
+use LaravelDocs\Generator\Writers\DocumentWriter;
 use Symfony\Component\Console\Input\InputOption;
 
 class GenerateControllerDocs extends Command
 {
     protected static $defaultName = 'generate:controller';
-    
+    protected $signature = 'docs:generate {file : Path to controller file} {output? : Output file path} {--dry-run : Preview changes without writing}';
+
+    /**
+     * Get configuration value (supports both Laravel and standalone)
+     */
+    protected function getConfigValue(string $key, string $envKey): mixed
+    {
+        // Try Laravel config first
+        if (function_exists('config')) {
+            $value = config('laravel-doc-generator.' . $key);
+            if ($value !== null) {
+                return $value;
+            }
+        }
+
+        // Fall back to environment variables
+        return $_ENV[$envKey] ?? getenv($envKey) ?? '';
+    }
+
     protected function configure()
     {
         $this
@@ -43,9 +61,9 @@ class GenerateControllerDocs extends Command
         
         $io->success("Found {$controllerData['className']} with " . count($controllerData['methods']) . " methods");
 
-        $apiKey = $_ENV['ANTHROPIC_API_KEY'] ?? getenv('ANTHROPIC_API_KEY') ?? '';
+        $apiKey = $this->getConfigValue('anthropic.api_key', 'ANTHROPIC_API_KEY');
         if (!$apiKey) {
-            $io->error('ANTHROPIC_API_KEY environment variable not set');
+            $io->error('ANTHROPIC_API_KEY environment variable or config not set');
             return Command::FAILURE;
         }
         

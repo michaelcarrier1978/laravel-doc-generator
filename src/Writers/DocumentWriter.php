@@ -1,6 +1,6 @@
 <?php
 
-namespace Michaelcarrier\LaravelDocGenerator\Writers;
+namespace LaravelDocs\Generator\Writers;
 
 use PhpParser\ParserFactory;
 use PhpParser\NodeTraverser;

@@ -43,10 +43,38 @@ Laravel Documentation Generator is a command-line tool that automates the proces
 
 ## Installation
 
+### For Laravel Projects (Recommended)
+
+1. Install via Composer:
+
+```bash
+composer require laravel-docs/generator
+```
+
+2. Publish the configuration file:
+
+```bash
+php artisan vendor:publish --provider="Michaelcarrier\LaravelDocGenerator\LaravelDocGeneratorServiceProvider"
+```
+
+3. Configure your credentials in `.env`:
+
+```env
+ANTHROPIC_API_KEY=your-anthropic-api-key
+CONFLUENCE_BASE_URL=https://your-domain.atlassian.net
+CONFLUENCE_EMAIL=your-email@example.com
+CONFLUENCE_API_TOKEN=your-confluence-api-token
+CONFLUENCE_SPACE_KEY=YOUR_SPACE
+```
+
+The package will auto-discover and register the commands automatically!
+
+### Standalone Installation
+
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/michaelcarrier/laravel-doc-generator.git
+git clone https://github.com/laravel-docs/generator.git
 cd laravel-doc-generator
 ```
 
@@ -102,6 +130,12 @@ CONFLUENCE_SPACE_KEY=YOUR_SPACE
 
 Generate documentation for a Laravel controller:
 
+**Laravel:**
+```bash
+php artisan docs:generate app/Http/Controllers/UserController.php
+```
+
+**Standalone:**
 ```bash
 php bin/console generate:controller path/to/Controller.php
 ```
@@ -109,19 +143,21 @@ php bin/console generate:controller path/to/Controller.php
 **With custom output file:**
 
 ```bash
+# Laravel
+php artisan docs:generate app/Http/Controllers/UserController.php app/Http/Controllers/UserController.documented.php
+
+# Standalone
 php bin/console generate:controller path/to/Controller.php path/to/DocumentedController.php
 ```
 
 **Dry run mode (preview only):**
 
 ```bash
+# Laravel
+php artisan docs:generate app/Http/Controllers/UserController.php --dry-run
+
+# Standalone
 php bin/console generate:controller path/to/Controller.php --dry-run
-```
-
-**Example:**
-
-```bash
-php bin/console generate:controller tests/fixtures/UserController.php
 ```
 
 This command will:
@@ -135,6 +171,12 @@ This command will:
 
 Generate documentation and publish it to Confluence:
 
+**Laravel:**
+```bash
+php artisan docs:publish app/Http/Controllers/UserController.php
+```
+
+**Standalone:**
 ```bash
 php bin/console publish:confluence path/to/Controller.php
 ```
@@ -142,19 +184,21 @@ php bin/console publish:confluence path/to/Controller.php
 **With custom space:**
 
 ```bash
+# Laravel
+php artisan docs:publish app/Http/Controllers/UserController.php --space=YOUR_SPACE
+
+# Standalone
 php bin/console publish:confluence path/to/Controller.php --space=YOUR_SPACE
 ```
 
 **With parent page:**
 
 ```bash
+# Laravel
+php artisan docs:publish app/Http/Controllers/UserController.php --parent-id=123456
+
+# Standalone
 php bin/console publish:confluence path/to/Controller.php --parent-id=123456
-```
-
-**Example:**
-
-```bash
-php bin/console publish:confluence tests/fixtures/UserController.php
 ```
 
 This command will:
@@ -168,6 +212,12 @@ This command will:
 
 Verify your Confluence credentials are working:
 
+**Laravel:**
+```bash
+php artisan docs:test-confluence
+```
+
+**Standalone:**
 ```bash
 php bin/console test:confluence
 ```
@@ -421,7 +471,7 @@ This project is open-source and available under the MIT License.
 
 ## Author
 
-Michael Carrier - [michael.carrier1978@gmail.com](mailto:michael.carrier1978@gmail.com)
+Laravel Docs Team - [support@laravel-doc.com](mailto:support@laravel-doc.com)
 
 ## Acknowledgments
 

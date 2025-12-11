@@ -1,11 +1,11 @@
 <?php
 
-namespace Michaelcarrier\LaravelDocGenerator\Parsers;
+namespace LaravelDocs\Generator\Parsers;
 
 use PhpParser\Node;
 use PhpParser\NodeFinder;
 use PhpParser\ParserFactory;
-use Michaelcarrier\LaravelDocGenerator\Parsers\QueryParser;
+use LaravelDocs\Generator\Parsers\QueryParser;
 
 class ControllerParser
 {

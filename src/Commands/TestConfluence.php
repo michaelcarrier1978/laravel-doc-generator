@@ -1,17 +1,35 @@
 <?php
 
-namespace Michaelcarrier\LaravelDocGenerator\Commands;
+namespace LaravelDocs\Generator\Commands;
 
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Michaelcarrier\LaravelDocGenerator\Clients\ConfluenceClient;
+use LaravelDocs\Generator\Clients\ConfluenceClient;
 
 class TestConfluence extends Command
 {
     protected static $defaultName = 'test:confluence';
-    
+    protected $signature = 'docs:test-confluence';
+
+    /**
+     * Get configuration value (supports both Laravel and standalone)
+     */
+    protected function getConfigValue(string $key, string $envKey): mixed
+    {
+        // Try Laravel config first
+        if (function_exists('config')) {
+            $value = config('laravel-doc-generator.' . $key);
+            if ($value !== null) {
+                return $value;
+            }
+        }
+
+        // Fall back to environment variables
+        return $_ENV[$envKey] ?? getenv($envKey) ?? '';
+    }
+
     protected function configure()
     {
         $this->setDescription('Test Confluence API connection');
@@ -21,9 +39,9 @@ class TestConfluence extends Command
     {
         $io = new SymfonyStyle($input, $output);
         
-        $baseUrl = $_ENV['CONFLUENCE_BASE_URL'] ?? getenv('CONFLUENCE_BASE_URL') ?? '';
-        $email = $_ENV['CONFLUENCE_EMAIL'] ?? getenv('CONFLUENCE_EMAIL') ?? '';
-        $apiToken = $_ENV['CONFLUENCE_API_TOKEN'] ?? getenv('CONFLUENCE_API_TOKEN') ?? '';
+        $baseUrl = $this->getConfigValue('confluence.base_url', 'CONFLUENCE_BASE_URL');
+        $email = $this->getConfigValue('confluence.email', 'CONFLUENCE_EMAIL');
+        $apiToken = $this->getConfigValue('confluence.api_token', 'CONFLUENCE_API_TOKEN');
         
         if (!$baseUrl || !$email || !$apiToken) {
             $io->error('Missing Confluence credentials in environment variables');
@@ -34,7 +52,7 @@ class TestConfluence extends Command
             $client = new ConfluenceClient($baseUrl, $email, $apiToken);
             
             // Test by getting a page
-            $spaceKey = $_ENV['CONFLUENCE_SPACE_KEY'] ?? getenv('CONFLUENCE_SPACE_KEY') ?? '';
+            $spaceKey = $this->getConfigValue('confluence.space_key', 'CONFLUENCE_SPACE_KEY');
             if ($spaceKey) {
                 $page = $client->getPageByTitle($spaceKey, 'Test Page');
                 if ($page) {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Michaelcarrier\LaravelDocGenerator\Analyzers;
+namespace LaravelDocs\Generator\Analyzers;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
