@@ -10,8 +10,8 @@ use LaravelDocs\Generator\Clients\ConfluenceClient;
 
 class TestConfluence extends Command
 {
-    protected static $defaultName = 'test:confluence';
     protected $signature = 'docs:test-confluence';
+    protected $description = 'Test Confluence API connection';
 
     /**
      * Get configuration value (supports both Laravel and standalone)

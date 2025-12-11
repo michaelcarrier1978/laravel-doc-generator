@@ -14,8 +14,8 @@ use Symfony\Component\Console\Input\InputOption;
 
 class GenerateControllerDocs extends Command
 {
-    protected static $defaultName = 'generate:controller';
     protected $signature = 'docs:generate {file : Path to controller file} {output? : Output file path} {--dry-run : Preview changes without writing}';
+    protected $description = 'Generate documentation for a Laravel controller';
 
     /**
      * Get configuration value (supports both Laravel and standalone)

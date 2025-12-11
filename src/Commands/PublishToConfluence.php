@@ -15,8 +15,8 @@ use LaravelDocs\Generator\Formatters\ConfluenceFormatter;
 
 class PublishToConfluence extends Command
 {
-    protected static $defaultName = 'publish:confluence';
     protected $signature = 'docs:publish {file : Path to controller file} {--space= : Confluence space key} {--parent-id= : Parent page ID}';
+    protected $description = 'Generate and publish controller documentation to Confluence';
 
     /**
      * Get configuration value (supports both Laravel and standalone)
