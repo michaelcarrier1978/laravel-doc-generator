@@ -30,43 +30,38 @@ class TestConfluence extends Command
         return $_ENV[$envKey] ?? getenv($envKey) ?? '';
     }
 
-    protected function configure()
+
+
+    public function handle()
     {
-        $this->setDescription('Test Confluence API connection');
-    }
-    
-    protected function execute(InputInterface $input, OutputInterface $output): int
-    {
-        $io = new SymfonyStyle($input, $output);
-        
         $baseUrl = $this->getConfigValue('confluence.base_url', 'CONFLUENCE_BASE_URL');
         $email = $this->getConfigValue('confluence.email', 'CONFLUENCE_EMAIL');
         $apiToken = $this->getConfigValue('confluence.api_token', 'CONFLUENCE_API_TOKEN');
-        
+
         if (!$baseUrl || !$email || !$apiToken) {
-            $io->error('Missing Confluence credentials in environment variables');
+            $this->error('Missing Confluence credentials in environment variables');
             return Command::FAILURE;
         }
-        
+
         try {
             $client = new ConfluenceClient($baseUrl, $email, $apiToken);
-            
+
             // Test by getting a page
             $spaceKey = $this->getConfigValue('confluence.space_key', 'CONFLUENCE_SPACE_KEY');
             if ($spaceKey) {
                 $page = $client->getPageByTitle($spaceKey, 'Test Page');
                 if ($page) {
-                    $io->success("Connected! Found page: {$page['title']}");
+                    $this->info("Connected! Found page: {$page['title']}");
                 } else {
-                    $io->success("Connected! (No test page found, but connection works)");
+                    $this->info("Connected! (No test page found, but connection works)");
                 }
             } else {
-                $io->success("Connection established! (Set CONFLUENCE_SPACE_KEY to test further)");
+                $this->info("Connection established! (Set CONFLUENCE_SPACE_KEY to test further)");
             }
-            
+
             return Command::SUCCESS;
         } catch (\Exception $e) {
-            $io->error("Connection failed: " . $e->getMessage());
+            $this->error("Connection failed: " . $e->getMessage());
             return Command::FAILURE;
         }
     }

@@ -35,22 +35,13 @@ class PublishToConfluence extends Command
         return $_ENV[$envKey] ?? getenv($envKey) ?? '';
     }
     
-    protected function configure()
+
+    public function handle()
     {
-        $this
-            ->setDescription('Generate and publish controller documentation to Confluence')
-            ->addArgument('file', InputArgument::REQUIRED, 'Path to controller file')
-            ->addOption('space', 's', InputOption::VALUE_REQUIRED, 'Confluence space key')
-            ->addOption('parent-id', 'p', InputOption::VALUE_REQUIRED, 'Parent page ID (optional)');
-    }
-    
-    protected function execute(InputInterface $input, OutputInterface $output): int
-    {
-        $io = new SymfonyStyle($input, $output);
-        $filePath = $input->getArgument('file');
+        $filePath = $this->argument('file');
         
         if (!file_exists($filePath)) {
-            $io->error("File not found: {$filePath}");
+            $this->error("File not found: {$filePath}");
             return Command::FAILURE;
         }
         
@@ -58,49 +49,51 @@ class PublishToConfluence extends Command
         $baseUrl = $this->getConfigValue('confluence.base_url', 'CONFLUENCE_BASE_URL');
         $email = $this->getConfigValue('confluence.email', 'CONFLUENCE_EMAIL');
         $apiToken = $this->getConfigValue('confluence.api_token', 'CONFLUENCE_API_TOKEN');
-        $spaceKey = $input->getOption('space') ?? $this->getConfigValue('confluence.space_key', 'CONFLUENCE_SPACE_KEY');
+        $spaceKey = $this->option('space') ?? $this->getConfigValue('confluence.space_key', 'CONFLUENCE_SPACE_KEY');
         
         if (!$baseUrl || !$email || !$apiToken || !$spaceKey) {
-            $io->error('Missing Confluence credentials or space key');
+            $this->error('Missing Confluence credentials or space key');
             return Command::FAILURE;
         }
         
-        $io->title('Publish to Confluence');
+        $this->info('Publish to Confluence');
         
         // Parse controller
-        $io->section('Parsing controller...');
+        $this->line('Parsing controller...');
         $parser = new ControllerParser();
         $controllerData = $parser->parse($filePath);
-        $io->success("Found {$controllerData['className']} with " . count($controllerData['methods']) . " methods");
+        $this->info("Found {$controllerData['className']} with " . count($controllerData['methods']) . " methods");
         
         // Get API key for Claude
         $apiKey = $this->getConfigValue('anthropic.api_key', 'ANTHROPIC_API_KEY');
         if (!$apiKey) {
-            $io->error('ANTHROPIC_API_KEY environment variable or config not set');
+            $this->error('ANTHROPIC_API_KEY environment variable or config not set');
             return Command::FAILURE;
         }
         
         // Generate documentation
-        $io->section('Generating documentation...');
+        $this->line('Generating documentation...');
         $analyzer = new ClaudeAnalyzer($apiKey);
-        $io->progressStart(count($controllerData['methods']));
-        
+        $bar = $this->output->createProgressBar(count($controllerData['methods']));
+        $bar->start();
+
         $methodDocs = [];
         foreach ($controllerData['methods'] as $method) {
             $docs = $analyzer->analyzeMethod($controllerData['className'], $method);
             $methodDocs[$method['name']] = $docs['phpdoc'];
-            $io->progressAdvance();
+            $bar->advance();
         }
-        
-        $io->progressFinish();
+
+        $bar->finish();
+        $this->newLine(2);
         
         // Format for Confluence
-        $io->section('Formatting for Confluence...');
+        $this->line('Formatting for Confluence...');
         $formatter = new ConfluenceFormatter();
         $confluenceContent = $formatter->formatControllerDocs($controllerData, $methodDocs);
         
         // Publish to Confluence
-        $io->section('Publishing to Confluence...');
+        $this->line('Publishing to Confluence...');
         $confluence = new ConfluenceClient($baseUrl, $email, $apiToken);
         
         $pageTitle = $controllerData['className'] . ' Documentation';
@@ -117,17 +110,17 @@ class PublishToConfluence extends Command
                     $confluenceContent,
                     $existingPage['version']['number']
                 );
-                $io->success("Updated existing page: {$result['_links']['base']}{$result['_links']['webui']}");
+                $this->info("Updated existing page: {$result['_links']['base']}{$result['_links']['webui']}");
             } else {
                 // Create new page
-                $parentId = $input->getOption('parent-id');
+                $parentId = $this->option('parent-id');
                 $result = $confluence->createPage($spaceKey, $pageTitle, $confluenceContent, $parentId);
-                $io->success("Created new page: {$result['_links']['base']}{$result['_links']['webui']}");
+                $this->info("Created new page: {$result['_links']['base']}{$result['_links']['webui']}");
             }
             
             return Command::SUCCESS;
         } catch (\Exception $e) {
-            $io->error("Failed to publish: " . $e->getMessage());
+            $this->error("Failed to publish: " . $e->getMessage());
             return Command::FAILURE;
         }
     }

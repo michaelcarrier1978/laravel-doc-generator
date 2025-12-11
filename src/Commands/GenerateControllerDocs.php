@@ -34,71 +34,62 @@ class GenerateControllerDocs extends Command
         return $_ENV[$envKey] ?? getenv($envKey) ?? '';
     }
 
-    protected function configure()
+    public function handle()
     {
-        $this
-        ->setDescription('Generate documentation for a Laravel controller')
-        ->addArgument('file', InputArgument::REQUIRED, 'Path to controller file')
-        ->addArgument('output', InputArgument::OPTIONAL, 'Output file path (defaults to input file)')
-        ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Preview changes without writing to file');
-    }
-    
-    protected function execute(InputInterface $input, OutputInterface $output): int
-    {
-        $io = new SymfonyStyle($input, $output);
-        $filePath = $input->getArgument('file');
-        
+        $filePath = $this->argument('file');
+
         if (!file_exists($filePath)) {
-            $io->error("File not found: {$filePath}");
+            $this->error("File not found: {$filePath}");
             return Command::FAILURE;
         }
-        
-        $io->title('Laravel Documentation Generator');
-        $io->section('Parsing controller...');
-        
+
+        $this->info('Laravel Documentation Generator');
+        $this->line('Parsing controller...');
+
         $parser = new ControllerParser();
         $controllerData = $parser->parse($filePath);
-        
-        $io->success("Found {$controllerData['className']} with " . count($controllerData['methods']) . " methods");
+
+        $this->info("Found {$controllerData['className']} with " . count($controllerData['methods']) . " methods");
 
         $apiKey = $this->getConfigValue('anthropic.api_key', 'ANTHROPIC_API_KEY');
         if (!$apiKey) {
-            $io->error('ANTHROPIC_API_KEY environment variable or config not set');
+            $this->error('ANTHROPIC_API_KEY environment variable or config not set');
             return Command::FAILURE;
         }
-        
+
         $analyzer = new ClaudeAnalyzer($apiKey);
-        
-        $io->section('Generating documentation...');
-        $io->progressStart(count($controllerData['methods']));
-        
+
+        $this->line('Generating documentation...');
+        $bar = $this->output->createProgressBar(count($controllerData['methods']));
+        $bar->start();
 
         $methodDocs = [];
         foreach ($controllerData['methods'] as $method) {
             $docs = $analyzer->analyzeMethod($controllerData['className'], $method);
             $methodDocs[$method['name']] = $docs['phpdoc'];
-            $io->progressAdvance();
+            $bar->advance();
         }
 
-        $io->progressFinish();
+        $bar->finish();
+        $this->newLine();
 
         // Write documentation to file
         $writer = new DocumentWriter();
-        $outputPath = $input->getArgument('output');
+        $outputPath = $this->argument('output');
 
-        if ($input->getOption('dry-run')) {
-            $io->section('Dry run - preview of changes:');
+        if ($this->option('dry-run')) {
+            $this->line('Dry run - preview of changes:');
             foreach ($methodDocs as $methodName => $docBlock) {
-                $io->writeln("<info>Method: {$methodName}</info>");
-                $io->writeln($docBlock);
-                $io->newLine();
+                $this->info("Method: {$methodName}");
+                $this->line($docBlock);
+                $this->newLine();
             }
-            $io->note('No files were modified (dry-run mode)');
+            $this->warn('No files were modified (dry-run mode)');
         } else {
             $writer->writeDocumentation($filePath, $methodDocs, $outputPath);
-            $io->success('Documentation written to ' . ($outputPath ?? $filePath));
+            $this->info('Documentation written to ' . ($outputPath ?? $filePath));
         }
-        
+
         return Command::SUCCESS;
     }
 }
