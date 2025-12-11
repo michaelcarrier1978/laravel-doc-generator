@@ -2,15 +2,10 @@
 
 namespace LaravelDocs\Generator\Commands;
 
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
+use Illuminate\Console\Command;
 use LaravelDocs\Generator\Parsers\ControllerParser;
 use LaravelDocs\Generator\Analyzers\ClaudeAnalyzer;
 use LaravelDocs\Generator\Writers\DocumentWriter;
-use Symfony\Component\Console\Input\InputOption;
 
 class GenerateControllerDocs extends Command
 {
