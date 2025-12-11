@@ -16,7 +16,7 @@ class ControllerParser
     
     public function __construct()
     {
-        $this->parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
+        $this->parser = (new ParserFactory())->createForNewestSupportedVersion();
         $this->nodeFinder = new NodeFinder();
         $this->queryParser = new QueryParser();
     }
