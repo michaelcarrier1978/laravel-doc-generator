@@ -36,8 +36,8 @@ class ClaudeAnalyzer
 
             $response = $this->client->post('/v1/messages', [
                 'json' => [
-                    'model' => 'claude-3-haiku-20240307',
-                    'max_tokens' => 1000,
+                    'model' => 'claude-3-5-sonnet-20241022',
+                    'max_tokens' => 4096,
                     'messages' => [
                         [
                             'role' => 'user',
@@ -77,9 +77,9 @@ class ClaudeAnalyzer
             fn($p) => ($p['type'] ?? '') . ' $' . $p['name'],
             $methodData['params']
         ));
-        
+
         return <<<PROMPT
-Analyze this Laravel controller method and provide documentation.
+You are a technical documentation expert analyzing Laravel controller code. Provide comprehensive, detailed documentation.
 
 Class: {$className}
 Method: {$methodData['name']}
@@ -89,14 +89,39 @@ Return Type: {$methodData['returnType']}
 Code:
 {$methodData['code']}
 
-Generate a PHPDoc comment including:
-1. One-sentence summary (what this method does)
-2. Detailed description (2-3 sentences about the logic and flow)
-3. @param tags for each parameter with description
-4. @return tag with description
-5. @throws tags for any exceptions (if applicable)
+Analyze this method deeply and generate a PHPDoc comment with:
 
-Output ONLY the PHPDoc comment block, formatted correctly with proper indentation.
+1. **Summary**: One clear sentence explaining the primary purpose
+
+2. **Detailed Description**: Write 4-6 sentences covering:
+   - What problem this method solves
+   - The main steps/algorithm it follows
+   - Key business logic or rules it implements
+   - Any important side effects or state changes
+   - How it handles edge cases or errors
+
+3. **Database Queries**: If there are SQL queries or Eloquent queries:
+   - Explain what each query retrieves
+   - Describe the relationships and joins
+   - Mention any CTEs, subqueries, or complex logic
+   - Explain the WHERE conditions and their purpose
+
+4. **Parameter Documentation**: For each parameter, explain:
+   - What it represents
+   - How it's used in the method
+   - Any constraints or expected values
+
+5. **Return Documentation**: Explain:
+   - What data structure is returned
+   - What the returned data contains
+   - Different scenarios that affect the return value
+
+6. **Exception Documentation**: List any exceptions thrown
+
+Be SPECIFIC. Reference actual variable names, table names, conditions, and logic from the code.
+Avoid generic phrases like "processes data" - instead say exactly what data and how.
+
+Output ONLY the PHPDoc comment block with /** ... */ formatting.
 PROMPT;
     }
     
